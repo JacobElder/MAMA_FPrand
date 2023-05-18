@@ -1,0 +1,47 @@
+---
+title: "Why You Should Always (Try) to Model Crossed Random Effects for Stimuli"
+author: "Jacob Elder"
+format: html
+editor: visual
+---
+
+## Fixed vs. Random Effects
+
+-   Fixed Effects: Represent the entire population of values that we are interested in; exhaustive
+
+    -   e.g. Smokers, Non-Smokers; Control, Drug; etc.
+
+-   Random Effects: Drawn from a larger population of values, which we hope to generalize to
+
+    -   People; stimuli; etc.
+
+## Problem with Linear Regression in the Face of Nonindependence
+
+-   GLM assumes independence among observations
+
+-   But trials within an individual or people within a school are more likely to share variance than those between individuals or schools
+
+-   Ignoring this will lead to downwardly biased standard errors and inflated false positive rate
+
+## Mixed Effects to the Rescue
+
+-   Get rid of those biased estimates from the fixed effects OLS, and account for variability in effects (random effects)
+-   Estimate predictors as fixed effects
+    -   i.e., the typical effect of predictor X for typical subject from sample; population-level (average) effects that should persist across analyses
+-   Estimate the intercepts and/or slopes as random effects
+    -   i.e. the variance in the mean of Y for subjects 1\...i (random intercept)
+    -   i.e. the variance in the effect of X for subjects1...i (random slope of X)
+
+## Random Intercepts and Fixed Slopes Model
+
+## Random Intercepts and Random Slopes Model
+
+## Stimuli as Random Effect in Experimental Research
+
+-   ANOVA and t-test commit fallacy of assuming stimuli are fixed by aggregating/averaging them
+
+-   If a sample of faces is assumed to be fixed, or a perfect representation of the population of faces, then a significant difference is often quite likely
+
+## Psycholinguists' Solution
+
+-   Combine a By-Subjects (F1) and By-Word (F2) ANOVA, and if both are significant (F1xF2), the test is deemed significant
