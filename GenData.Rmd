@@ -153,5 +153,123 @@ FPdflong2 <- pivot_longer(FPdf2, values_to = "FP", names_to = "Type", cols = -c(
 ```
 
 ```{r}
-ggplot(FPdflong2, aes(x=Omega0,color=Type,y=FP)) + geom_line() + xlab("Stimulus-Level Variation") + ylab("False Positive Percentage") + scale_color_discrete(labels = c("RSub+Random Slope","RSub+Fixed Slope","RStim and RSub+Fixed Slope")) + geom_hline(aes(yintercept=.05), linetype="dashed") + facet_wrap(~Tau1)
+ggplot(FPdflong2, aes(x=Omega0,color=Type,y=FP)) + geom_line() + xlab("Stimulus-Level Variation") + ylab("False Positive Percentage") + scale_color_discrete(labels = c("RSub+Random Slope","RSub+Fixed Slope","RStim and RSub+Random Slope")) + geom_hline(aes(yintercept=.05), linetype="dashed") + facet_wrap(~Tau1)
+```
+
+# Iterating Over Subject N and Stimulus Intercept Variance
+
+```{r}
+stimVars <- seq(from=0,to=300,by=25)
+stimVarsL <- length(stimVars)
+subSsamp <- seq(from=50,to=300,by=50)
+subSsampL <- length(subSsamp)
+FPdf3 <- matrix(ncol=5,nrow=stimVarsL*subSsampL)
+
+stimRvsNo <- function(
+    stimVar = 200,
+    subjSlopeVar = 100,
+    subjIntVar = 40,
+    n_Sub = 100,
+    n_StimI  =  25,
+    n_StimO =  25
+){
+df <- my_sim_data(omega_0 = stimVar, n_subj = n_Sub)
+stimR <- lmer(RT ~ 1 + X_i + (1 | item_id) + (1 + X_i | subj_id),
+                data = df)
+
+stimNo <- lmer(RT ~ 1 + X_i + (1 + X_i | subj_id),
+                data = df)
+
+subF <- lmer(RT ~ 1 + X_i + ( 1 | subj_id),
+                data = df)
+
+c(as.numeric(summary(stimNo)$coefficients[2,"Pr(>|t|)"] < .05),
+  as.numeric(summary(stimR)$coefficients[2,"Pr(>|t|)"]< .05),
+  as.numeric(summary(subF)$coefficients[2,"Pr(>|t|)"]< .05)
+  )
+}
+
+iter <- 1
+for(j in 1:subSsampL){
+  for(i in 1:stimVarsL){
+  
+  reps <- 500
+  # Set a "plan" for how the code should run.
+  plan(multisession, workers = 4)
+  FP <- future_map(1:reps, ~stimRvsNo(stimVar = stimVars[i], n_Sub = subSsamp[j]), .options = furrr_options(seed = T))
+  FP <- do.call(rbind, FP)
+  FPdf3[iter,] <- c(stimVars[i], subSsamp[j], colMeans(FP))
+  iter <- iter + 1
+  
+  }
+}
+```
+
+```{r}
+colnames(FPdf3) <- c("Omega0","Sub_N","NoStimR","StimR","NoStimRSubF")
+FPdf3 <- as.data.frame(FPdf3)
+FPdflong3 <- pivot_longer(FPdf3, values_to = "FP", names_to = "Type", cols = -c(Omega0,Sub_N))
+```
+
+```{r}
+ggplot(FPdflong3, aes(x=Omega0,color=Type,y=FP)) + geom_line() + xlab("Stimulus-Level Variation") + ylab("False Positive Percentage") + scale_color_discrete(labels = c("RSub+Random Slope","RSub+Fixed Slope","RStim and RSub+Random Slope")) + geom_hline(aes(yintercept=.05), linetype="dashed") + facet_wrap(~Sub_N)
+```
+
+# Iterating Over Stimulus N and Stimulus Intercept Variance
+
+```{r}
+stimVars <- seq(from=0,to=300,by=25)
+stimVarsL <- length(stimVars)
+subSsamp <- seq(from=25,to=150,by=25)
+subSsampL <- length(subSsamp)
+FPdf4 <- matrix(ncol=5,nrow=stimVarsL*subSsampL)
+
+stimRvsNo <- function(
+    stimVar = 200,
+    subjSlopeVar = 100,
+    subjIntVar = 40,
+    n_Sub = 100,
+    n_StimI  =  25,
+    n_StimO =  25
+){
+df <- my_sim_data(omega_0 = stimVar, n_ingroup = n_StimI, n_outgroup = n_StimO)
+stimR <- lmer(RT ~ 1 + X_i + (1 | item_id) + (1 + X_i | subj_id),
+                data = df)
+
+stimNo <- lmer(RT ~ 1 + X_i + (1 + X_i | subj_id),
+                data = df)
+
+subF <- lmer(RT ~ 1 + X_i + ( 1 | subj_id),
+                data = df)
+
+c(as.numeric(summary(stimNo)$coefficients[2,"Pr(>|t|)"] < .05),
+  as.numeric(summary(stimR)$coefficients[2,"Pr(>|t|)"]< .05),
+  as.numeric(summary(subF)$coefficients[2,"Pr(>|t|)"]< .05)
+  )
+}
+
+iter <- 1
+for(j in 1:subSsampL){
+  for(i in 1:stimVarsL){
+  
+  reps <- 500
+  # Set a "plan" for how the code should run.
+  plan(multisession, workers = 4)
+  FP <- future_map(1:reps, ~stimRvsNo(stimVar = stimVars[i], n_StimI = subSsamp[j], n_StimO = subSsamp[j]), .options = furrr_options(seed = T))
+  FP <- do.call(rbind, FP)
+  FPdf4[iter,] <- c(stimVars[i], subSsamp[j], colMeans(FP))
+  iter <- iter + 1
+  
+  }
+}
+```
+
+```{r}
+colnames(FPdf4) <- c("Omega0","Stim_N","NoStimR","StimR","NoStimRSubF")
+FPdf4 <- as.data.frame(FPdf4)
+FPdflong4 <- pivot_longer(FPdf4, values_to = "FP", names_to = "Type", cols = -c(Omega0,Stim_N))
+```
+
+```{r}
+ggplot(FPdflong4, aes(x=Omega0,color=Type,y=FP)) + geom_line() + xlab("Stimulus-Level Variation") + ylab("False Positive Percentage") + scale_color_discrete(labels = c("RSub+Random Slope","RSub+Fixed Slope","RStim and RSub+Random Slope")) + geom_hline(aes(yintercept=.05), linetype="dashed") + facet_wrap(~Stim_N)
 ```
